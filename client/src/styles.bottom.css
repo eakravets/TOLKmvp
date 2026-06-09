@@ -1,0 +1,19 @@
+:root{--button-height:64px}
+
+/* Ensure screen has extra bottom padding so content doesn't go under the fixed button */
+.screen{padding-bottom:calc(16px + var(--button-height) + env(safe-area-inset-bottom)) !important}
+
+/* Make pill buttons use the defined height */
+.pill{height:var(--button-height) !important}
+
+/* Fixed bottom container for primary action; buttons must be at least 54px above bottom */
+.bottom{position:fixed;left:0;right:0;bottom:calc(54px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:6px 18px 0;z-index:3}
+.bottom .sheetSub{margin:0;max-width:370px;text-align:center;color:#a6a6a6;font-size:18px}
+.bottom .pill{max-width:370px;width:100%;margin:0 16px}
+.bottom .dots{margin-top:4px}
+
+/* When result sheet is open ensure it has enough bottom padding so its internal CTA is visible */
+.sheet.open{padding-bottom:calc(var(--button-height) + 20px + env(safe-area-inset-bottom))}
+
+/* Remove absolute positioning for result dots — they will live inside .bottom */
+.result>.dots{position:static}
