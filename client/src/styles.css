@@ -139,7 +139,9 @@ p {
     overflow-x: hidden;
     font-size: 18px;
     line-height: 1.5;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .05)
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .05);
+    animation: cardAppear .6s cubic-bezier(.2, .8, .2, 1);
+transform-origin: left bottom;
 }
 
 .readCard p {
@@ -162,6 +164,17 @@ p {
 .readCard::-webkit-scrollbar-thumb {
     background: #666;
     border-radius: 999px
+}
+@keyframes cardAppear {
+    from {
+        opacity: 0;
+        transform: translate(-30px, 40px) scale(0.92);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
 }
 
 .bottom {
@@ -505,5 +518,20 @@ p {
     .screen {
         border-left: 1px solid #222;
         border-right: 1px solid #222
+    }
+}
+.screen {
+    animation: screenSlide .35s cubic-bezier(.2,.8,.2,1);
+}
+
+@keyframes screenSlide {
+    from {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
     }
 }
