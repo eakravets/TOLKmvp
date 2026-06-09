@@ -95,7 +95,7 @@ function Recording({ back, analyze }) {
   }
   const mm=String(Math.floor(sec/60)).padStart(2,'0'), ss=String(sec%60).padStart(2,'0');
   return <main className="screen dark rec"><Back onClick={back}/>
-    {!recording ? <><div className="recAnim"><VideoAsset src="/animationonblack.mp4" /></div></> : <><div className="micWrap"><div className="rings" style={{'--ring-scale':1 + volume * 0.4}}></div><img src="/mic.svg" alt="" className="mic-fixed" /></div><div className="timer">{mm}:{ss}</div></>}
+    {!recording ? <><div className="recAnim"><VideoAsset src="/animation2.mp4" /></div></> : <><div className="micWrap"><div className="rings" style={{'--ring-scale':1 + volume * 0.4}}></div><img src="/mic.svg" alt="" className="mic-fixed" /></div><div className="timer">{mm}:{ss}</div></>}
     <div className="bottom">{!recording ? <><Button onClick={start}>Начать запись</Button><Dots active={1}/></> : <><Button onClick={stop}>Остановить запись</Button><Dots active={1}/></>}</div>
   </main>;
 }
