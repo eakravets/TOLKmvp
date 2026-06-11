@@ -44,11 +44,26 @@ function Reading({ next, back, text }) {
   </main>;
 }
 function RecordingIntro({ next, back }) {
-  return <main className="screen dark intro"><Back onClick={back}/>
-    <div className="centerText"><h2>{noWidow('Расскажите, как вы поняли текст')}</h2><p>{noWidow('Не пытайтесь повторить текст дословно. Главное — передать смысл ясно и уверенно.')}</p></div>
-    <div className="bottom"><Button onClick={next}>Дальше</Button><Dots active={1}/></div>
-  </main>;
+  return (
+    <main className="screen dark intro">
+      <Back onClick={back} />
+
+      <div className="centerText">
+        <h2>{noWidow('Расскажите, как вы поняли текст')}</h2>
+
+        <p>
+          {noWidow('Не пытайтесь повторить текст дословно. Главное — передать смысл ясно и уверенно.')}
+        </p>
+      </div>
+
+      <div className="bottom">
+        <Button onClick={next}>Начать запись</Button>
+        <Dots active={1}/>
+      </div>
+    </main>
+  );
 }
+
 function Recording({ back, analyze }) {
   const [recording, setRecording] = useState(false);
   const [sec, setSec] = useState(0);
@@ -64,15 +79,9 @@ function Recording({ back, analyze }) {
     return () => clearInterval(id);
   }, [recording]);
 
-  useEffect(() => {
-    return () => {
-      if (raf.current) cancelAnimationFrame(raf.current);
-      if (audioCtx.current) {
-        audioCtx.current.close();
-        audioCtx.current = null;
-      }
-    };
-  }, []);
+ useEffect(() => {
+  start();
+}, []);
 
   async function start() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -161,9 +170,7 @@ function Recording({ back, analyze }) {
       <Back onClick={back} />
 
       {!recording ? (
-        <div className="recAnim">
-          <VideoAsset src="/animation2.mp4" />
-        </div>
+        <></>
       ) : (
         <>
           <div className="micWrap">
@@ -175,18 +182,13 @@ function Recording({ back, analyze }) {
       )}
 
       <div className="bottom">
-        {!recording ? (
-          <>
-            <Button onClick={start}>Начать запись</Button>
-            <Dots active={1} />
-          </>
-        ) : (
-          <>
-            <Button onClick={stop}>Остановить запись</Button>
-            <Dots active={1} />
-          </>
-        )}
-      </div>
+  {recording && (
+    <>
+      <Button onClick={stop}>Остановить запись</Button>
+      <Dots active={1} />
+    </>
+  )}
+</div>
     </main>
   );
 }
@@ -205,6 +207,37 @@ function Result({ result }) {
   confidence: 45,
   meaning: 82
 };
+const [animatedScores, setAnimatedScores] = useState({
+  cleanliness: 0,
+  vocabulary: 0,
+  confidence: 0,
+  meaning: 0
+});
+
+useEffect(() => {
+  const keys = ['cleanliness', 'vocabulary', 'confidence', 'meaning'];
+
+  keys.forEach((key, index) => {
+    setTimeout(() => {
+      let current = 0;
+      const target = s[key] || 0;
+
+      const timer = setInterval(() => {
+        current += 2;
+
+        if (current >= target) {
+          current = target;
+          clearInterval(timer);
+        }
+
+        setAnimatedScores(prev => ({
+          ...prev,
+          [key]: current
+        }));
+      }, 16);
+    }, index * 450);
+  });
+}, [result]);
   
   useEffect(()=>{
     const sheet=sheetRef.current;
@@ -224,7 +257,7 @@ function Result({ result }) {
   },[open]);
   
   return <main className="screen light result"><h2>Ваш речевой профиль</h2>
-    <section className="scoreCard">{Object.entries(labels).map(([k,v])=><div className="score" key={k}><span>{v}</span><div><b style={{width:`${s[k]||0}%`}}/></div></div>)}</section>
+    <section className="scoreCard">{Object.entries(labels).map(([k,v])=><div className="score" key={k}><span>{v}</span><div><b style={{width:`${animatedScores[k] || 0}%`}}/></div></div>)}</section>
     <p className="comment">{noWidow(result?.comment || 'Вы хорошо удерживаете основную мысль и уверенно формулируете идеи. Стоит поработать над количеством пауз и разнообразием формулировок.')}</p>
     <section ref={sheetRef} className={`sheet ${open?'open':''}`}>
       <div className="sheetHandle"/>
@@ -255,13 +288,42 @@ function Result({ result }) {
 }
 function App(){
   const [step,setStep]=useState(0), [text,setText]=useState(fallbackText), [result,setResult]=useState(null);
-  useEffect(()=>{ fetch(`${API}/api/text`).then(r=>r.json()).then(d=>setText(d.text)).catch(()=>{}) },[]);
+
+  useEffect(()=>{
+    fetch(`${API}/api/text`)
+      .then(r=>r.json())
+      .then(d=>setText(d.text))
+      .catch(()=>{})
+  },[]);
+
   async function analyze(blob, extension = 'webm'){
-  setStep(4);
-  const fd = new FormData();
-  fd.append('audio', blob, `speech.${extension}`);
-  fd.append('sourceText', text); try{ const r=await fetch(`${API}/api/analyze`,{method:'POST',body:fd}); const data=await r.json(); await new Promise(res=>setTimeout(res,2300)); setResult(data); }catch{ await new Promise(res=>setTimeout(res,2300)); setResult(null); } setStep(5); }
-  return [<Welcome next={()=>setStep(1)}/>,<Reading text={text} next={()=>setStep(2)} back={()=>setStep(0)}/>,<RecordingIntro next={()=>setStep(3)} back={()=>setStep(1)}/>,<Recording back={()=>setStep(2)} analyze={analyze}/>,<Analysis/>,<Result result={result}/>][step];
+    setStep(4);
+
+    const fd = new FormData();
+    fd.append('audio', blob, `speech.${extension}`);
+    fd.append('sourceText', text);
+
+    try{
+      const r=await fetch(`${API}/api/analyze`,{method:'POST',body:fd});
+      const data=await r.json();
+      await new Promise(res=>setTimeout(res,2300));
+      setResult(data);
+    }catch{
+      await new Promise(res=>setTimeout(res,2300));
+      setResult(null);
+    }
+
+    setStep(5);
+  }
+
+  return [
+  <Welcome next={()=>setStep(1)}/>,
+  <Reading text={text} next={()=>setStep(2)} back={()=>setStep(0)}/>,
+  <RecordingIntro next={()=>setStep(3)} back={()=>setStep(1)}/>,
+  <Recording back={()=>setStep(2)} analyze={analyze}/>,
+  <Analysis/>,
+  <Result result={result}/>
+][step];
 }
 
 createRoot(document.getElementById('root')).render(<App />);
