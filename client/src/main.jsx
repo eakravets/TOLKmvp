@@ -46,58 +46,144 @@ function RecordingIntro({ next, back }) {
 }
 function Recording({ back, analyze }) {
   const [recording, setRecording] = useState(false);
-  const [sec,setSec]=useState(0);
-  const [volume,setVolume]=useState(0);
+  const [sec, setSec] = useState(0);
+  const [volume, setVolume] = useState(0);
   const media = useRef(null);
   const chunks = useRef([]);
   const audioCtx = useRef(null);
-  const analyser = useRef(null);
   const raf = useRef(null);
-  useEffect(()=>{ if(!recording) return; const id=setInterval(()=>setSec(s=>s+1),1000); return()=>clearInterval(id); },[recording]);
-  useEffect(()=>{ return()=>{ if(raf.current) cancelAnimationFrame(raf.current); if(audioCtx.current){ audioCtx.current.close(); audioCtx.current=null; } } },[]);
-  async function start(){
-    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-    chunks.current=[];
-    const mr = new MediaRecorder(stream);
+
+  useEffect(() => {
+    if (!recording) return;
+    const id = setInterval(() => setSec(s => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [recording]);
+
+  useEffect(() => {
+    return () => {
+      if (raf.current) cancelAnimationFrame(raf.current);
+      if (audioCtx.current) {
+        audioCtx.current.close();
+        audioCtx.current = null;
+      }
+    };
+  }, []);
+
+  async function start() {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    chunks.current = [];
+    setSec(0);
+
+    const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+  ? { mimeType: 'audio/webm;codecs=opus' }
+  : {};
+    
+
+    const mr = new MediaRecorder(stream, options);
     media.current = mr;
-    mr.ondataavailable = e => chunks.current.push(e.data);
-    mr.onstop = () => { stream.getTracks().forEach(t=>t.stop()); analyze(new Blob(chunks.current,{type:'audio/webm'})); };
+
+    mr.ondataavailable = e => {
+      if (e.data.size > 0) chunks.current.push(e.data);
+    };
+
+  mr.onstop = () => {
+  stream.getTracks().forEach(t => t.stop());
+
+  const mimeType = 'audio/webm;codecs=opus';
+  const extension = 'webm';
+  const audioBlob = new Blob(chunks.current, { type: mimeType });
+
+  console.log('mimeType:', mimeType);
+  console.log('blob size:', audioBlob.size);
+
+  analyze(audioBlob, extension);
+};
+
     mr.start();
+
     const ac = new AudioContext();
     audioCtx.current = ac;
     const src = ac.createMediaStreamSource(stream);
     const ana = ac.createAnalyser();
     ana.fftSize = 2048;
     src.connect(ana);
-    analyser.current = ana;
+
     const data = new Uint8Array(ana.fftSize);
+
     const updateVolume = () => {
       ana.getByteTimeDomainData(data);
+
       let sum = 0;
-      for(let i = 0; i < data.length; i++){
+      for (let i = 0; i < data.length; i++) {
         const normalized = (data[i] - 128) / 128;
         sum += normalized * normalized;
       }
+
       const rms = Math.sqrt(sum / data.length);
       const v = Math.min(1, Math.max(0, rms * 3));
+
       setVolume(v);
       raf.current = requestAnimationFrame(updateVolume);
     };
+
     raf.current = requestAnimationFrame(updateVolume);
     setRecording(true);
   }
-  function stop(){
+
+  function stop() {
     setRecording(false);
     media.current?.stop();
-    if(raf.current){ cancelAnimationFrame(raf.current); raf.current = null; }
-    if(audioCtx.current){ audioCtx.current.close(); audioCtx.current = null; }
+
+    if (raf.current) {
+      cancelAnimationFrame(raf.current);
+      raf.current = null;
+    }
+
+    if (audioCtx.current) {
+      audioCtx.current.close();
+      audioCtx.current = null;
+    }
+
     setVolume(0);
   }
-  const mm=String(Math.floor(sec/60)).padStart(2,'0'), ss=String(sec%60).padStart(2,'0');
-  return <main className="screen dark rec"><Back onClick={back}/>
-    {!recording ? <><div className="recAnim"><VideoAsset src="/animation2.mp4" /></div></> : <><div className="micWrap"><div className="rings" style={{'--ring-scale':1 + volume * 0.4}}></div><img src="/mic.svg" alt="" className="mic-fixed" /></div><div className="timer">{mm}:{ss}</div></>}
-    <div className="bottom">{!recording ? <><Button onClick={start}>Начать запись</Button><Dots active={1}/></> : <><Button onClick={stop}>Остановить запись</Button><Dots active={1}/></>}</div>
-  </main>;
+
+  const mm = String(Math.floor(sec / 60)).padStart(2, '0');
+  const ss = String(sec % 60).padStart(2, '0');
+
+  return (
+    <main className="screen dark rec">
+      <Back onClick={back} />
+
+      {!recording ? (
+        <div className="recAnim">
+          <VideoAsset src="/animation2.mp4" />
+        </div>
+      ) : (
+        <>
+          <div className="micWrap">
+            <div className="rings" style={{ '--ring-scale': 1 + volume * 0.4 }} />
+            <img src="/mic.svg" alt="" className="mic-fixed" />
+          </div>
+          <div className="timer">{mm}:{ss}</div>
+        </>
+      )}
+
+      <div className="bottom">
+        {!recording ? (
+          <>
+            <Button onClick={start}>Начать запись</Button>
+            <Dots active={1} />
+          </>
+        ) : (
+          <>
+            <Button onClick={stop}>Остановить запись</Button>
+            <Dots active={1} />
+          </>
+        )}
+      </div>
+    </main>
+  );
 }
 function Analysis() {
   const phrases=['Анализируем вашу речь...','Оцениваем темп речи...','Анализируем словарный запас...','Определяем уверенность подачи...'];
@@ -160,7 +246,7 @@ function Result({ result }) {
 function App(){
   const [step,setStep]=useState(0), [text,setText]=useState(fallbackText), [result,setResult]=useState(null);
   useEffect(()=>{ fetch(`${API}/api/text`).then(r=>r.json()).then(d=>setText(d.text)).catch(()=>{}) },[]);
-  async function analyze(blob){ setStep(4); const fd=new FormData(); fd.append('audio', blob, 'speech.webm'); try{ const r=await fetch(`${API}/api/analyze`,{method:'POST',body:fd}); const data=await r.json(); await new Promise(res=>setTimeout(res,2300)); setResult(data); }catch{ await new Promise(res=>setTimeout(res,2300)); setResult(null); } setStep(5); }
+  async function analyze(blob, extension = 'webm'){ setStep(4); const fd=new FormData(); fd.append('audio', blob, `speech.${extension}`); try{ const r=await fetch(`${API}/api/analyze`,{method:'POST',body:fd}); const data=await r.json(); await new Promise(res=>setTimeout(res,2300)); setResult(data); }catch{ await new Promise(res=>setTimeout(res,2300)); setResult(null); } setStep(5); }
   return [<Welcome next={()=>setStep(1)}/>,<Reading text={text} next={()=>setStep(2)} back={()=>setStep(0)}/>,<RecordingIntro next={()=>setStep(3)} back={()=>setStep(1)}/>,<Recording back={()=>setStep(2)} analyze={analyze}/>,<Analysis/>,<Result result={result}/>][step];
 }
 

@@ -56,11 +56,14 @@ app.post('/api/analyze', upload.single('audio'), async (req, res) => {
       return res.json(fallbackAnalysis('Демо-режим: добавьте OPENAI_API_KEY на backend, чтобы включить транскрибацию и AI-анализ.'));
     }
 
-    const transcription = await client.audio.transcriptions.create({
-      file: fs.createReadStream(file.path),
-      model: 'gpt-4o-mini-transcribe',
-      language: 'ru'
-    });
+    const audioPath = file.path + '.webm';
+fs.renameSync(file.path, audioPath);
+
+const transcription = await client.audio.transcriptions.create({
+  file: fs.createReadStream(audioPath),
+  model: 'gpt-4o-mini-transcribe',
+  language: 'ru'
+});
 
     const transcript = transcription.text || '';
     const completion = await client.chat.completions.create({
@@ -77,8 +80,11 @@ app.post('/api/analyze', upload.single('audio'), async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Analysis failed', details: error.message });
-  } finally {
-    if (file?.path) fs.rm(file.path, { force: true }, () => {});
+    } finally {
+    if (file?.path) {
+      fs.rm(file.path, { force: true }, () => {});
+      fs.rm(file.path + '.webm', { force: true }, () => {});
+    }
   }
 });
 
