@@ -4,7 +4,12 @@ import './styles.css';
 import './styles.bottom.css';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-const labels = { repetitions: 'Повторения', vocabulary: 'Словарный запас', confidence: 'Уверенность речи', meaning: 'Смысл' };
+const labels = {
+  cleanliness: 'Чистота речи',
+  vocabulary: 'Словарный запас',
+  confidence: 'Уверенность речи',
+  meaning: 'Смысл'
+};
 const fallbackText = `Современная коммуникация — это не только красивая речь, но и способность быстро формулировать мысль.
 
 Люди редко запоминают длинные фразы. Они запоминают ясность, уверенность и ощущение, что человек понимает, о чём говорит.
@@ -194,7 +199,12 @@ function Result({ result }) {
   const [open,setOpen]=useState(false); 
   const sheetRef=useRef(null);
   const touchStart=useRef(0);
-  const s=result?.scores || {repetitions:74,vocabulary:58,confidence:45,meaning:82};
+ const s = result?.scores || {
+  cleanliness: 74,
+  vocabulary: 58,
+  confidence: 45,
+  meaning: 82
+};
   
   useEffect(()=>{
     const sheet=sheetRef.current;
@@ -246,7 +256,11 @@ function Result({ result }) {
 function App(){
   const [step,setStep]=useState(0), [text,setText]=useState(fallbackText), [result,setResult]=useState(null);
   useEffect(()=>{ fetch(`${API}/api/text`).then(r=>r.json()).then(d=>setText(d.text)).catch(()=>{}) },[]);
-  async function analyze(blob, extension = 'webm'){ setStep(4); const fd=new FormData(); fd.append('audio', blob, `speech.${extension}`); try{ const r=await fetch(`${API}/api/analyze`,{method:'POST',body:fd}); const data=await r.json(); await new Promise(res=>setTimeout(res,2300)); setResult(data); }catch{ await new Promise(res=>setTimeout(res,2300)); setResult(null); } setStep(5); }
+  async function analyze(blob, extension = 'webm'){
+  setStep(4);
+  const fd = new FormData();
+  fd.append('audio', blob, `speech.${extension}`);
+  fd.append('sourceText', text); try{ const r=await fetch(`${API}/api/analyze`,{method:'POST',body:fd}); const data=await r.json(); await new Promise(res=>setTimeout(res,2300)); setResult(data); }catch{ await new Promise(res=>setTimeout(res,2300)); setResult(null); } setStep(5); }
   return [<Welcome next={()=>setStep(1)}/>,<Reading text={text} next={()=>setStep(2)} back={()=>setStep(0)}/>,<RecordingIntro next={()=>setStep(3)} back={()=>setStep(1)}/>,<Recording back={()=>setStep(2)} analyze={analyze}/>,<Analysis/>,<Result result={result}/>][step];
 }
 

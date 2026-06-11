@@ -41,7 +41,7 @@ function fallbackAnalysis(transcript = '') {
   const confidence = Math.max(45, Math.min(90, total > 35 ? 74 : 58));
   const sense = Math.max(50, Math.min(93, /реч|мысл|ясн|практик|увер/i.test(transcript) ? 84 : 62));
   return {
-    scores: { repetitions: repeats, vocabulary: vocab, confidence, meaning: sense },
+    scores: { cleanliness: repeats, vocabulary: vocab, confidence, meaning: sense },
     comment: 'Вы передали основную мысль. Стоит добавить больше структуры, меньше пауз и разнообразить формулировки.',
     transcript
   };
@@ -70,9 +70,54 @@ const transcription = await client.audio.transcriptions.create({
       model: 'gpt-4o-mini',
       response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: 'Ты анализируешь устный пересказ на русском. Верни только JSON.' },
-        { role: 'user', content: `Исходный текст:\n${req.body?.sourceText || 'Исходный текст не передан'}\n\nПересказ пользователя:\n${transcript}\n\nОцени от 0 до 100 категории: repetitions, vocabulary, confidence, meaning. repetitions означает отсутствие повторов: чем меньше повторов, тем выше оценка. Верни JSON вида {"scores":{"repetitions":75,"vocabulary":70,"confidence":80,"meaning":85},"comment":"короткий комментарий на русском до 28 слов"}.` }
-      ]
+  {
+    role: 'system',
+    content: `Ты — эксперт по развитию устной речи и пересказа.
+
+Оценивай строго, но поддерживающе. Не хвали автоматически.
+Если пересказ не соответствует исходному тексту, снижай meaning.
+Верни только JSON без markdown.`
+  },
+  {
+    role: 'user',
+    content: `Исходный текст:
+${req.body?.sourceText || 'Исходный текст не передан'}
+
+Пересказ пользователя:
+${transcript}
+
+Оцени от 0 до 100:
+
+cleanliness — чистота речи: отсутствие слов-паразитов, лишних повторов, зацикливания и речевого мусора.
+vocabulary — разнообразие и точность слов.
+confidence — уверенность, плавность и связность речи.
+meaning — насколько пересказ соответствует исходному тексту.
+
+Правила:
+- Если пересказ не связан с исходным текстом, meaning не выше 20.
+- Если пользователь сказал слишком мало, meaning не выше 35.
+- Если смысл передан частично, meaning 40–65.
+- Если основная мысль передана хорошо, meaning 70–85.
+- Если пересказ точный, ясный и своими словами, meaning 86–100.
+- Средний результат должен быть в диапазоне 45–75.
+- Оценки выше 85 ставь только за действительно сильный пересказ.
+
+Комментарий:
+Напиши коротко, мотивирующе и честно.
+Сначала отметь одну сильную сторону, затем одну конкретную точку роста.
+
+Верни JSON строго такого вида:
+{
+  "scores": {
+    "cleanliness": 0,
+    "vocabulary": 0,
+    "confidence": 0,
+    "meaning": 0
+  },
+  "comment": "короткий комментарий на русском до 35 слов"
+}`
+  }
+]
     });
 
     const parsed = JSON.parse(completion.choices[0]?.message?.content || '{}');
