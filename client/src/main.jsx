@@ -29,12 +29,58 @@ function Dots({ active=0, total=3 }) { return <div className="dots">{Array.from(
 function VideoAsset({ src, className }) { return <video className={className} src={src} autoPlay muted playsInline preload="auto" />; }
 
 function Welcome({ next }) {
-  return <main className="screen light welcome">
-    <VideoAsset src="/logo.mp4" className="logoVideo" />
-    <h1>{noWidow('Проверьте свой словарный запас и умение доносить мысль за 5 минут')}</h1>
-    <div className="heroShape"><VideoAsset src="/animation.mp4" /></div>
-    <div className="bottom"><Button dark onClick={next}>Начать</Button></div>
-  </main>;
+  return (
+    <main className="screen dark welcome newWelcome">
+      <img src="/blur-top.png" className="blurTop" alt="" />
+<img src="/blur-bottom.png" className="blurBottom" alt="" />
+
+      <VideoAsset src="/logolight.mp4" className="logoVideo newLogoVideo" />
+
+      <h1>{noWidow('Проверьте качество своей речи за 2 минуты')}</h1>
+
+      <div className="welcomeList">
+        <div className="welcomeItem">
+          <img src="/icon-mic.svg" alt="" />
+          <div>
+            <h3>Устный тест</h3>
+            <p>Перескажите короткий текст</p>
+          </div>
+        </div>
+
+        <div className="welcomeItem">
+          <img src="/icon-time.svg" alt="" />
+          <div>
+            <h3>Всего 2 минуты</h3>
+            <p>Никакой теории и подготовки</p>
+          </div>
+        </div>
+
+        <div className="welcomeItem">
+          <img src="/icon-stars.svg" alt="" />
+          <div>
+            <h3>Персональные рекомендации</h3>
+            <p>Сильные стороны вашей речи и места роста</p>
+          </div>
+        </div>
+
+        <div className="welcomeItem">
+          <img src="/icon-list.svg" alt="" />
+          <div>
+            <h3>Оценка по 5 критериям</h3>
+            <p>Словарный запас, структура речи и другие</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="heroShape newHeroShape">
+        <VideoAsset src="/animation2.mp4" />
+      </div>
+
+      <div className="bottom">
+        <Button onClick={next}>Начать</Button>
+      </div>
+    </main>
+  );
 }
 function Reading({ next, back, text }) {
   return <main className="screen dark reading"><Back onClick={back}/>
