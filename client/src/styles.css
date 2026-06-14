@@ -671,3 +671,165 @@ transform-origin: left bottom;
     bottom: calc(28px + env(safe-area-inset-bottom));
     z-index: 5;
 }
+.newReading {
+    position: relative;
+    overflow: hidden;
+}
+
+.readingTopBlur {
+    position: absolute;
+    top: -120px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 130%;
+    opacity: .45;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.stepNumber {
+    position: absolute;
+    top: 34px;
+    right: 16px;
+    font-size: 128px;
+    line-height: .8;
+    font-weight: 600;
+    font-family: Jost, system-ui, sans-serif;
+    color: rgba(255, 255, 255, 0.068);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.newReading h2 {
+    position: relative;
+    z-index: 2;
+    font-size: 24px;
+    line-height: 1.12;
+    max-width: 360px;
+    margin: 130px auto 0;
+    text-align: center;
+    color: var(--white);
+    font-weight: 500;
+}
+
+.readingTime {
+    position: relative;
+    z-index: 2;
+    margin: 52px 0 22px 12px;
+    width: fit-content;
+    height: 54px;
+    padding: 0 26px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.068);
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    color: var(--white);
+    font-size: 14px;
+}
+
+.readingTime img {
+    width: 24px;
+    height: 24px;
+}
+
+.newReading .readCard {
+    position: relative;
+    z-index: 2;
+    max-height: 31dvh;
+    margin: 0 auto;
+    max-width: 390px;
+    border-radius: 20px;
+    padding: 34px 28px;
+    overflow-y: auto;
+
+    background: rgba(255, 255, 255, 0.004);
+    border: 1px solid rgba(255, 255, 255, 0.068);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    color: var(--white);
+}
+
+
+
+.newReading .readCard p {
+    max-width: 100%;
+    margin: 0;
+    font-family: "Cormorant Garamond", serif;
+    font-size: 18px;
+    line-height: 1.15;
+    color: var(--white);
+}
+
+.newReading .readCard p + p {
+    margin-top: 28px;
+}
+
+.readingHint {
+    position: absolute;
+    left: 38px;
+    right: 28px;
+    bottom: 130px;
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    gap: 0px;
+    align-items: center;
+    color: #777;
+    z-index: 2;
+}
+
+.readingHint img {
+    width: 30px;
+    height: 30px;
+}
+
+.readingHint p {
+    font-size: 14px;
+    line-height: 1.15;
+    color: #777;
+}
+
+.newReading .bottom {
+    z-index: 3;
+}
+
+.newReading .dots {
+    display: none;
+}
+.rec {
+    animation: none !important;
+}
+.timerWrap {
+    text-align: center;
+}
+
+.recordingStatus {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #727272;
+    line-height: 1;
+}
+.recordingHint {
+    position: absolute;
+    left: 36px;
+    right: 36px;
+    bottom: 130px;
+
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: -10px;
+    align-items: center;
+}
+
+.recordingHint img {
+    width: 30px;
+    height: 30px;
+}
+
+.recordingHint p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.15;
+    color: #727272;
+}

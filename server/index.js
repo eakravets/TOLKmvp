@@ -66,6 +66,23 @@ const transcription = await client.audio.transcriptions.create({
 });
 
     const transcript = transcription.text || '';
+    const words = transcript
+  .trim()
+  .toLowerCase()
+  .match(/[а-яёa-z0-9]+/gi) || [];
+
+if (words.length < 5) {
+  return res.json({
+    scores: {
+      cleanliness: 0,
+      vocabulary: 0,
+      confidence: 0,
+      meaning: 0
+    },
+    comment: 'Похоже, запись получилась слишком короткой. Попробуйте ещё раз: перескажите главную мысль текста хотя бы в нескольких предложениях.',
+    transcript
+  });
+}
     const completion = await client.chat.completions.create({
       model: 'gpt-4o-mini',
       response_format: { type: 'json_object' },

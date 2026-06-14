@@ -83,16 +83,41 @@ function Welcome({ next }) {
   );
 }
 function Reading({ next, back, text }) {
-  return <main className="screen dark reading"><Back onClick={back}/>
-    <h2>{noWidow('Прочитайте текст и подготовьтесь передать его смысл своими словами')}</h2>
-    <section className="readCard">{text.split('\n').map((p,i)=><p key={i}>{noWidow(p)}</p>)}</section>
-    <div className="bottom"><Button onClick={next}>Дальше</Button><Dots active={0}/></div>
-  </main>;
+  return (
+    <main className="screen dark reading newReading">
+      <img src="/blur-bottom.png" className="readingTopBlur" alt="" />
+
+      <Back onClick={back}/>
+
+      <div className="stepNumber">01</div>
+
+      <h2>{noWidow('Прочитайте текст и подготовьтесь передать его смысл своими словами')}</h2>
+
+      <div className="readingTime">
+        <img src="/icon-time.svg" alt="" />
+        <span>1-2 минуты</span>
+      </div>
+
+      <section className="readCard">
+        {text.split('\n').map((p,i)=><p key={i}>{noWidow(p)}</p>)}
+      </section>
+
+      <div className="readingHint">
+        <img src="/icon-stars.svg" alt="" />
+        <p>{noWidow('Ваша цель — передать главную мысль, так, как вы ее поняли')}</p>
+      </div>
+
+      <div className="bottom">
+        <Button onClick={next}>Дальше</Button>
+      </div>
+    </main>
+  );
 }
 function RecordingIntro({ next, back }) {
   return (
     <main className="screen dark intro">
       <Back onClick={back} />
+      <div className="stepNumber">02</div>
 
       <div className="centerText">
         <h2>{noWidow('Расскажите, как вы поняли текст')}</h2>
@@ -104,7 +129,7 @@ function RecordingIntro({ next, back }) {
 
       <div className="bottom">
         <Button onClick={next}>Начать запись</Button>
-        <Dots active={1}/>
+       
       </div>
     </main>
   );
@@ -214,24 +239,33 @@ function Recording({ back, analyze }) {
   return (
     <main className="screen dark rec">
       <Back onClick={back} />
+      <div className="stepNumber">02</div>
 
       {!recording ? (
-        <></>
-      ) : (
-        <>
-          <div className="micWrap">
-            <div className="rings" style={{ '--ring-scale': 1 + volume * 0.4 }} />
-            <img src="/mic.svg" alt="" className="mic-fixed" />
-          </div>
-          <div className="timer">{mm}:{ss}</div>
-        </>
-      )}
+  <></>
+) : (
+  <>
+    <div className="micWrap">
+      <div className="rings" style={{ '--ring-scale': 1 + volume * 0.4 }} />
+      <img src="/mic.svg" alt="" className="mic-fixed" />
+    </div>
 
+    <div className="timerWrap">
+      <div className="timer">{mm}:{ss}</div>
+      <div className="recordingStatus">Говорите...</div>
+    </div>
+
+    <div className="recordingHint">
+      <img src="/icon-stars.svg" alt="" />
+      <p>Передайте смысл текста своими словами</p>
+    </div>
+  </>
+)}
       <div className="bottom">
   {recording && (
     <>
       <Button onClick={stop}>Остановить запись</Button>
-      <Dots active={1} />
+   
     </>
   )}
 </div>
@@ -328,7 +362,7 @@ useEffect(() => {
     </a>
   </div>
 )}
-      <Dots active={2}/>
+     
     </div>
   </main>;
 }
