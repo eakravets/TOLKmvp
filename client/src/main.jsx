@@ -336,7 +336,7 @@ useEffect(() => {
     return()=>{handle.removeEventListener('touchstart',handleTouchStart);handle.removeEventListener('touchend',handleTouchEnd)};
   },[open]);
   
-  return <main className="screen light result"><h2>Ваш речевой профиль</h2>
+  return <main className="screen dark result"><h2>Ваш речевой профиль</h2>
     <section className="scoreCard">{Object.entries(labels).map(([k,v])=><div className="score" key={k}><span>{v}</span><div><b style={{width:`${animatedScores[k] || 0}%`}}/></div></div>)}</section>
     <p className="comment">{noWidow(result?.comment || 'Вы хорошо удерживаете основную мысль и уверенно формулируете идеи. Стоит поработать над количеством пауз и разнообразием формулировок.')}</p>
     <section ref={sheetRef} className={`sheet ${open?'open':''}`}>
