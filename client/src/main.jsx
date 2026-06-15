@@ -336,7 +336,7 @@ useEffect(() => {
     return()=>{handle.removeEventListener('touchstart',handleTouchStart);handle.removeEventListener('touchend',handleTouchEnd)};
   },[open]);
   
-  return <main className="screen dark result"><h2>Ваш речевой профиль</h2>
+  return <main className="screen light result"><h2>Ваш речевой профиль</h2>
     <section className="scoreCard">{Object.entries(labels).map(([k,v])=><div className="score" key={k}><span>{v}</span><div><b style={{width:`${animatedScores[k] || 0}%`}}/></div></div>)}</section>
     <p className="comment">{noWidow(result?.comment || 'Вы хорошо удерживаете основную мысль и уверенно формулируете идеи. Стоит поработать над количеством пауз и разнообразием формулировок.')}</p>
     <section ref={sheetRef} className={`sheet ${open?'open':''}`}>
@@ -344,26 +344,31 @@ useEffect(() => {
       <p className="sheetTitle">{noWidow('Мы создаём ТОЛК — тренажер для развития уверенной устной речи, словарного запаса через короткие тренировки.')}</p>
       {open && <img src="/logolight.svg" className="sheetLogo" alt="ТОЛК"/>}
     </section>
-    <div className="bottom">
-      {open && <p className="sheetSub">{noWidow('Подпишитесь, чтобы получить приглашение в числе первых пользователей.')}</p>}
-      <Button onClick={()=>setOpen(true)}>Получить приглашение</Button>
-      {open && (
-  <div className="socials">
-    <a href="https://vk.com/tolk_app" target="_blank" rel="noopener noreferrer">
-      <Button outline>
-        <img src="/logovk.svg" alt="VK" />
-      </Button>
-    </a>
-
-    <a href="https://t.me/tolk_app" target="_blank" rel="noopener noreferrer">
-      <Button outline>
-        <img src="/logotelegram.svg" alt="Telegram" />
-      </Button>
-    </a>
-  </div>
+{open && (
+  <p className="sheetSub">
+    {noWidow('Подпишитесь, чтобы получить приглашение в числе первых пользователей.')}
+  </p>
 )}
-     
+
+<div className="bottom">
+  {!open && (
+    <Button onClick={() => setOpen(true)}>
+      Получить приглашение
+    </Button>
+  )}
+
+  {open && (
+    <div className="socials">
+      <a className="pill outline" href="https://vk.com/tolk_app" target="_blank" rel="noopener noreferrer">
+        <img src="/logovk.svg" alt="VK" />
+      </a>
+
+      <a className="pill outline" href="https://t.me/tolk_app" target="_blank" rel="noopener noreferrer">
+        <img src="/logotelegram.svg" alt="Telegram" />
+      </a>
     </div>
+  )}
+</div>
   </main>;
 }
 function App(){
