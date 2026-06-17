@@ -85,7 +85,7 @@ p {
 
 .pill {
     width: 100%;
-    height: 50px;
+    height: 44px;
     border: 0;
     border-radius: 999px;
     background: #f0f0f0;
@@ -216,7 +216,7 @@ transform-origin: left bottom;
 }
 
 .centerText {
-    transform: translateY(-25px)
+    transform: translateY(-100px)
 }
 
 .centerText h2 {
@@ -386,7 +386,7 @@ transform-origin: left bottom;
     text-align: center;
     margin: 15px auto 0;
     max-width: 330px;
-    color: rgba(255,255,255,.85);
+    color: #555;
 }
 
 .sheet {
@@ -398,7 +398,7 @@ transform-origin: left bottom;
     border: 1px solid rgba(255, 255, 255, 0.068);
     color: white;
     border-radius: 46px 46px 0 0;
-    min-height: 350px;
+    min-height: 280px;
     padding: 8px 34px 28px;
     text-align: center;
     transition: .45s cubic-bezier(.2, .8, .2, 1);
@@ -435,7 +435,7 @@ transform-origin: left bottom;
 
 .sheetLogo {
     position: absolute;
-    top: -30px;
+    top: -45px;
     left: 50%;
     transform: translateX(-50%);
     width: 86%;
@@ -445,7 +445,7 @@ transform-origin: left bottom;
 .sheetTitle {
     font-size: 18px;
     color: #E8E8E8;
-    margin: 120px 0 0 0
+    margin: 70px 0 0 0
 }
 
 .sheetTitle::first-letter {
@@ -463,7 +463,7 @@ transform-origin: left bottom;
 }
 
 .sheet .pill {
-    height: 50px;
+    height: 44px;
     font-size: 18px;
 }
 
@@ -597,7 +597,7 @@ transform-origin: left bottom;
 
 .newLogoVideo {
     width: 58%;
-    margin: 92px auto 0;
+    margin: 20px auto 0;
     opacity: .45;
     transform: translateX(10px);
 }
@@ -650,7 +650,7 @@ transform-origin: left bottom;
 .newHeroShape {
     position: absolute;
     right: -8px;
-    bottom: 125px;
+    bottom: 75px;
     width: 72%;
     height: auto;
     margin: 0;
@@ -703,7 +703,7 @@ transform-origin: left bottom;
     font-size: 24px;
     line-height: 1.12;
     max-width: 360px;
-    margin: 130px auto 0;
+    margin: 30px auto 0;
     text-align: center;
     color: var(--white);
     font-weight: 500;
@@ -712,7 +712,7 @@ transform-origin: left bottom;
 .readingTime {
     position: relative;
     z-index: 2;
-    margin: 52px 0 22px 12px;
+    margin: 22px 0 22px 12px;
     width: fit-content;
     height: 54px;
     padding: 0 26px;
@@ -733,11 +733,11 @@ transform-origin: left bottom;
 .newReading .readCard {
     position: relative;
     z-index: 2;
-    max-height: 31dvh;
-    margin: 0 auto;
-    max-width: 390px;
+    max-height: 50dvh;
+    margin: 24px auto 0;
+    max-width: 380px;
     border-radius: 20px;
-    padding: 34px 28px;
+    padding: 24px 24px;
     overflow-y: auto;
 
     background: rgba(255, 255, 255, 0.004);
@@ -760,7 +760,7 @@ transform-origin: left bottom;
 }
 
 .newReading .readCard p + p {
-    margin-top: 28px;
+    margin-top: 8px;
 }
 
 .readingHint {
@@ -874,7 +874,7 @@ transform-origin: left bottom;
     justify-content: center;
 
     width: 100%;
-    height: 50px;
+    height: 44px;
 
     padding: 0;
     line-height: 0;
@@ -910,4 +910,10 @@ transform-origin: left bottom;
     width: 320px;
     text-align: center;
     z-index: 1000;
+}
+.readingTime {
+    display: none !important;
+}
+.pill {
+    height: 44px !important;
 }
