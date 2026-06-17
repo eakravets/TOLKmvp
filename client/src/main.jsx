@@ -3,20 +3,14 @@ import { createRoot } from 'react-dom/client';
 import './styles.css';
 import './styles.bottom.css';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API = import.meta.env.VITE_API_URL || '';
 const labels = {
   cleanliness: 'Чистота речи',
   vocabulary: 'Словарный запас',
   confidence: 'Уверенность речи',
   meaning: 'Смысл'
 };
-const fallbackText = `Современная коммуникация — это не только красивая речь, но и способность быстро формулировать мысль.
-
-Люди редко запоминают длинные фразы. Они запоминают ясность, уверенность и ощущение, что человек понимает, о чём говорит.
-
-Даже сильные специалисты часто теряются, когда нужно объяснить идею коротко, ответить без подготовки или убедительно защитить позицию.
-
-Хорошая речь — это не талант. Это навык, который развивается через практику.`;
+const fallbackText = '';
 
 function noWidow(text) {
   return text.replace(/\s([А-Яа-яA-Za-z]{1,2})\s/g, ' $1\u00A0');
@@ -282,10 +276,10 @@ function Result({ result }) {
   const sheetRef=useRef(null);
   const touchStart=useRef(0);
  const s = result?.scores || {
-  cleanliness: 74,
-  vocabulary: 58,
-  confidence: 45,
-  meaning: 82
+  cleanliness: 0,
+  vocabulary: 0,
+  confidence: 0,
+  meaning: 0
 };
 const [animatedScores, setAnimatedScores] = useState({
   cleanliness: 0,
@@ -338,7 +332,9 @@ useEffect(() => {
   
   return <main className="screen light result"><h2>Ваш речевой профиль</h2>
     <section className="scoreCard">{Object.entries(labels).map(([k,v])=><div className="score" key={k}><span>{v}</span><div><b style={{width:`${animatedScores[k] || 0}%`}}/></div></div>)}</section>
-    <p className="comment">{noWidow(result?.comment || 'Вы хорошо удерживаете основную мысль и уверенно формулируете идеи. Стоит поработать над количеством пауз и разнообразием формулировок.')}</p>
+    <p className="comment">
+  {noWidow(result?.comment || 'Не удалось получить анализ. Попробуйте записать речь ещё раз.')}
+</p>
     <section ref={sheetRef} className={`sheet ${open?'open':''}`}>
       <div className="sheetHandle"/>
       <p className="sheetTitle">{noWidow('Мы создаём ТОЛК — тренажер для развития уверенной устной речи, словарного запаса через короткие тренировки.')}</p>
@@ -372,7 +368,7 @@ useEffect(() => {
   </main>;
 }
 function App(){
-  const [step,setStep]=useState(0), [text,setText]=useState(fallbackText), [result,setResult]=useState(null);
+  const [step,setStep]=useState(0), [text,setText]=useState(''), [result,setResult]=useState(null);
 
   useEffect(()=>{
     fetch(`${API}/api/text`)
@@ -388,15 +384,32 @@ function App(){
     fd.append('audio', blob, `speech.${extension}`);
     fd.append('sourceText', text);
 
-    try{
-      const r=await fetch(`${API}/api/analyze`,{method:'POST',body:fd});
-      const data=await r.json();
-      await new Promise(res=>setTimeout(res,2300));
-      setResult(data);
-    }catch{
-      await new Promise(res=>setTimeout(res,2300));
-      setResult(null);
-    }
+  try {
+  const r = await fetch(`${API}/api/analyze`, { method: 'POST', body: fd });
+
+  if (!r.ok) {
+    const errorText = await r.text();
+    throw new Error(`API ${r.status}: ${errorText}`);
+  }
+
+  const data = await r.json();
+  await new Promise(res => setTimeout(res, 2300));
+  setResult(data);
+} catch (err) {
+  console.error('ANALYZE ERROR:', err);
+
+  await new Promise(res => setTimeout(res, 2300));
+
+  setResult({
+    scores: {
+      cleanliness: 0,
+      vocabulary: 0,
+      confidence: 0,
+      meaning: 0
+    },
+    comment: 'Не удалось получить анализ. Попробуйте записать речь ещё раз.'
+  });
+}
 
     setStep(5);
   }
