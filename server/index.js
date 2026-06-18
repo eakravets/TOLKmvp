@@ -164,6 +164,7 @@ async function transcribeWithYandex(mp3Path) {
     if (!opResponse.ok) {
       throw new Error(`Yandex operation failed: ${JSON.stringify(opData)}`);
     }
+console.log('YANDEX OP DATA:', JSON.stringify(opData).slice(0, 2000));
 
     if (opData.done) {
       const transcript = extractTextDeep(opData.response || opData);
