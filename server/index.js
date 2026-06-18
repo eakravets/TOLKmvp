@@ -3,12 +3,17 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import fs from 'node:fs';
-import OpenAI from 'openai';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
 
 const app = express();
 const upload = multer({ dest: 'uploads/', limits: { fileSize: 25 * 1024 * 1024 } });
-const client = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
+
 const PORT = process.env.PORT || 3001;
+const YANDEX_API_KEY = process.env.YANDEX_API_KEY;
+const YANDEX_FOLDER_ID = process.env.YANDEX_FOLDER_ID;
 
 app.use(cors());
 app.use(express.json());
@@ -28,125 +33,196 @@ function getRandomText() {
 }
 
 app.get('/api/text', (_req, res) => {
-  const text = getRandomText();
-  res.json({ text });
+  res.json({ text: getRandomText() });
 });
 
 function fallbackAnalysis(transcript = '') {
   const words = transcript.toLowerCase().match(/[а-яёa-z0-9]+/gi) || [];
   const total = Math.max(words.length, 1);
   const unique = new Set(words).size;
-  const repeats = Math.max(35, Math.min(92, 100 - Math.round((total - unique) / total * 80)));
-  const vocab = Math.max(35, Math.min(94, Math.round(unique / total * 120)));
+
+  const cleanliness = Math.max(35, Math.min(92, 100 - Math.round((total - unique) / total * 80)));
+  const vocabulary = Math.max(35, Math.min(94, Math.round(unique / total * 120)));
   const confidence = Math.max(45, Math.min(90, total > 35 ? 74 : 58));
-  const sense = Math.max(50, Math.min(93, /реч|мысл|ясн|практик|увер/i.test(transcript) ? 84 : 62));
+  const meaning = Math.max(35, Math.min(90, total > 25 ? 70 : 52));
+
   return {
-    scores: { cleanliness: repeats, vocabulary: vocab, confidence, meaning: sense },
-    comment: 'Вы передали основную мысль. Стоит добавить больше структуры, меньше пауз и разнообразить формулировки.',
+    scores: {
+      cleanliness,
+      vocabulary,
+      confidence,
+      meaning
+    },
+    comment: 'Речь распознана. Вы передали часть мысли; следующий шаг — добавить AI-оценку смысла через YandexGPT.',
     transcript
   };
 }
 
-app.post('/api/analyze', upload.single('audio'), async (req, res) => {
-  const file = req.file;
-  if (!file) return res.status(400).json({ error: 'Audio file is required' });
+async function convertToMp3(inputPath) {
+  const outputPath = `${inputPath}.mp3`;
 
-  try {
-    if (!client) {
-      return res.json(fallbackAnalysis('Демо-режим: добавьте OPENAI_API_KEY на backend, чтобы включить транскрибацию и AI-анализ.'));
+  await execFileAsync('ffmpeg', [
+    '-y',
+    '-i', inputPath,
+    '-vn',
+    '-acodec', 'libmp3lame',
+    '-ar', '48000',
+    '-ac', '1',
+    '-b:a', '96k',
+    outputPath
+  ]);
+
+  return outputPath;
+}
+
+function extractTextDeep(obj) {
+  const found = [];
+
+  function walk(value) {
+    if (!value) return;
+
+    if (typeof value === 'string') return;
+
+    if (Array.isArray(value)) {
+      value.forEach(walk);
+      return;
     }
 
-    const audioPath = file.path + '.webm';
-fs.renameSync(file.path, audioPath);
+    if (typeof value === 'object') {
+      if (typeof value.text === 'string') {
+        found.push(value.text);
+      }
 
-const transcription = await client.audio.transcriptions.create({
-  file: fs.createReadStream(audioPath),
-  model: 'gpt-4o-mini-transcribe',
-  language: 'ru'
-});
-
-    const transcript = transcription.text || '';
-    const words = transcript
-  .trim()
-  .toLowerCase()
-  .match(/[а-яёa-z0-9]+/gi) || [];
-
-if (words.length < 5) {
-  return res.json({
-    scores: {
-      cleanliness: 0,
-      vocabulary: 0,
-      confidence: 0,
-      meaning: 0
-    },
-    comment: 'Похоже, запись получилась слишком короткой. Попробуйте ещё раз: перескажите главную мысль текста хотя бы в нескольких предложениях.',
-    transcript
-  });
-}
-    const completion = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      response_format: { type: 'json_object' },
-      messages: [
-  {
-    role: 'system',
-    content: `Ты — эксперт по развитию устной речи и пересказа.
-
-Оценивай строго, но поддерживающе. Не хвали автоматически.
-Если пересказ не соответствует исходному тексту, снижай meaning.
-Верни только JSON без markdown.`
-  },
-  {
-    role: 'user',
-    content: `Исходный текст:
-${req.body?.sourceText || 'Исходный текст не передан'}
-
-Пересказ пользователя:
-${transcript}
-
-Оцени от 0 до 100:
-
-cleanliness — чистота речи: отсутствие слов-паразитов, лишних повторов, зацикливания и речевого мусора.
-vocabulary — разнообразие и точность слов.
-confidence — уверенность, плавность и связность речи.
-meaning — насколько пересказ соответствует исходному тексту.
-
-Правила:
-- Если пересказ не связан с исходным текстом, meaning не выше 20.
-- Если пользователь сказал слишком мало, meaning не выше 35.
-- Если смысл передан частично, meaning 40–65.
-- Если основная мысль передана хорошо, meaning 70–85.
-- Если пересказ точный, ясный и своими словами, meaning 86–100.
-- Средний результат должен быть в диапазоне 45–75.
-- Оценки выше 85 ставь только за действительно сильный пересказ.
-
-Комментарий:
-Напиши коротко, мотивирующе и честно.
-Сначала отметь одну сильную сторону, затем одну конкретную точку роста.
-
-Верни JSON строго такого вида:
-{
-  "scores": {
-    "cleanliness": 0,
-    "vocabulary": 0,
-    "confidence": 0,
-    "meaning": 0
-  },
-  "comment": "короткий комментарий на русском до 35 слов"
-}`
+      Object.values(value).forEach(walk);
+    }
   }
-]
+
+  walk(obj);
+
+  return [...new Set(found)].join(' ').replace(/\s+/g, ' ').trim();
+}
+
+async function transcribeWithYandex(mp3Path) {
+  if (!YANDEX_API_KEY || !YANDEX_FOLDER_ID) {
+    throw new Error('YANDEX_API_KEY or YANDEX_FOLDER_ID is missing');
+  }
+
+  const audioBase64 = fs.readFileSync(mp3Path).toString('base64');
+
+  const startResponse = await fetch('https://stt.api.cloud.yandex.net/stt/v3/recognizeFileAsync', {
+    method: 'POST',
+    headers: {
+      Authorization: `Api-Key ${YANDEX_API_KEY}`,
+      'x-folder-id': YANDEX_FOLDER_ID,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      content: audioBase64,
+      recognitionModel: {
+        model: 'general',
+        audioFormat: {
+          containerAudio: {
+            containerAudioType: 'MP3'
+          }
+        },
+        textNormalization: {
+          textNormalization: 'TEXT_NORMALIZATION_ENABLED',
+          profanityFilter: false,
+          literatureText: true
+        },
+        languageRestriction: {
+          restrictionType: 'WHITELIST',
+          languageCode: ['ru-RU']
+        }
+      }
+    })
+  });
+
+  const startData = await startResponse.json();
+
+  if (!startResponse.ok) {
+    throw new Error(`Yandex STT start failed: ${JSON.stringify(startData)}`);
+  }
+
+  const operationId = startData.id;
+
+  if (!operationId) {
+    throw new Error(`Yandex STT operation id missing: ${JSON.stringify(startData)}`);
+  }
+
+  for (let i = 0; i < 30; i++) {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const opResponse = await fetch(`https://operation.api.cloud.yandex.net/operations/${operationId}`, {
+      headers: {
+        Authorization: `Api-Key ${YANDEX_API_KEY}`
+      }
     });
 
-    const parsed = JSON.parse(completion.choices[0]?.message?.content || '{}');
-    res.json({ ...fallbackAnalysis(transcript), ...parsed, transcript });
+    const opData = await opResponse.json();
+
+    if (!opResponse.ok) {
+      throw new Error(`Yandex operation failed: ${JSON.stringify(opData)}`);
+    }
+
+    if (opData.done) {
+      const transcript = extractTextDeep(opData.response || opData);
+
+      if (!transcript) {
+        throw new Error(`Yandex STT returned empty transcript: ${JSON.stringify(opData)}`);
+      }
+
+      return transcript;
+    }
+  }
+
+  throw new Error('Yandex STT timeout');
+}
+
+app.post('/api/analyze', upload.single('audio'), async (req, res) => {
+  const file = req.file;
+
+  if (!file) {
+    return res.status(400).json({ error: 'Audio file is required' });
+  }
+
+  const uploadedPath = file.path;
+  const webmPath = `${uploadedPath}.webm`;
+  let mp3Path = null;
+
+  try {
+    fs.renameSync(uploadedPath, webmPath);
+
+    mp3Path = await convertToMp3(webmPath);
+
+    const transcript = await transcribeWithYandex(mp3Path);
+
+    const words = transcript.trim().toLowerCase().match(/[а-яёa-z0-9]+/gi) || [];
+
+    if (words.length < 5) {
+      return res.json({
+        scores: {
+          cleanliness: 0,
+          vocabulary: 0,
+          confidence: 0,
+          meaning: 0
+        },
+        comment: 'Похоже, запись получилась слишком короткой. Попробуйте ещё раз: перескажите главную мысль текста хотя бы в нескольких предложениях.',
+        transcript
+      });
+    }
+
+    res.json(fallbackAnalysis(transcript));
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Analysis failed', details: error.message });
-    } finally {
-    if (file?.path) {
-      fs.rm(file.path, { force: true }, () => {});
-      fs.rm(file.path + '.webm', { force: true }, () => {});
-    }
+    res.status(500).json({
+      error: 'Analysis failed',
+      details: error.message
+    });
+  } finally {
+    fs.rm(uploadedPath, { force: true }, () => {});
+    fs.rm(webmPath, { force: true }, () => {});
+    if (mp3Path) fs.rm(mp3Path, { force: true }, () => {});
   }
 });
 
