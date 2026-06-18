@@ -350,25 +350,18 @@ function Result({ result }) {
         <h2>Ваш речевой профиль</h2>
 
         <div className="resultMetrics">
-          {metrics.map((metric) => (
-            <div className="resultMetric" key={metric.key}>
-              <div className="resultMetric">
+     {metrics.map((metric) => (
+  <div className="resultMetric" key={metric.key}>
+    <div className="resultMetricTop">
+      <span>{metric.label}</span>
+      <b>{metric.value}%</b>
+    </div>
 
-  <div className="resultMetricLabel">
-    {metric.label}
+    <div className="resultMetricBar">
+      <i style={{ width: `${metric.value}%` }} />
+    </div>
   </div>
-
-  <div className="resultMetricBar">
-    <i style={{ width: `${metric.value}%` }} />
-  </div>
-
-  <div className="resultMetricValue">
-    {metric.value}%
-  </div>
-
-</div>
-            </div>
-          ))}
+))}
         </div>
       </section>
 
@@ -380,9 +373,11 @@ function Result({ result }) {
         <div className="sheetHandle" />
 
         <p className="sheetTitle">
-          {noWidow('Мы создаём ТОЛК — тренажер для развития уверенной устной речи, словарного запаса через короткие тренировки.')}
+          {noWidow('Хотите увеличить свой результат?')}
         </p>
-
+<p className="sheetLead">
+  {noWidow('Получите первые упражнения до запуска платформы')}
+</p>
         {open && <img src="/logolight.svg" className="sheetLogo" alt="ТОЛК" />}
       </section>
 
