@@ -108,7 +108,77 @@ async function transcribeWithYandex(audioPath) {
 
   return transcript;
 }
+async function analyzeWithYandexGPT({ sourceText, transcript }) {
+  const prompt = `Исходный текст:
+${sourceText || 'Исходный текст не передан'}
 
+Пересказ пользователя:
+${transcript}
+
+Оцени от 0 до 100:
+cleanliness — чистота речи: отсутствие слов-паразитов, повторов и речевого мусора.
+vocabulary — разнообразие и точность слов.
+confidence — уверенность, плавность и связность речи.
+meaning — насколько пересказ соответствует исходному тексту.
+
+Правила:
+- Если пересказ не связан с исходным текстом, meaning не выше 20.
+- Если пользователь сказал слишком мало, meaning не выше 35.
+- Если смысл передан частично, meaning 40–65.
+- Если основная мысль передана хорошо, meaning 70–85.
+- Если пересказ точный, ясный и своими словами, meaning 86–100.
+- Оценки выше 85 ставь только за действительно сильный пересказ.
+
+Верни JSON строго такого вида:
+{
+  "scores": {
+    "cleanliness": 0,
+    "vocabulary": 0,
+    "confidence": 0,
+    "meaning": 0
+  },
+  "comment": "короткий комментарий на русском до 35 слов"
+}`;
+
+  const response = await fetch('https://llm.api.cloud.yandex.net/foundationModels/v1/completion', {
+    method: 'POST',
+    headers: {
+      Authorization: `Api-Key ${YANDEX_API_KEY}`,
+      'x-folder-id': YANDEX_FOLDER_ID,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      modelUri: `gpt://${YANDEX_FOLDER_ID}/yandexgpt-lite/latest`,
+      completionOptions: {
+        stream: false,
+        temperature: 0.2,
+        maxTokens: 800
+      },
+      jsonObject: true,
+      messages: [
+        {
+          role: 'system',
+          text: 'Ты эксперт по развитию устной речи. Отвечай только валидным JSON без markdown.'
+        },
+        {
+          role: 'user',
+          text: prompt
+        }
+      ]
+    })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(`YandexGPT failed: ${JSON.stringify(data)}`);
+  }
+
+  const raw = data.result?.alternatives?.[0]?.message?.text || '{}';
+  const cleaned = raw.replace(/```json|```/g, '').trim();
+
+  return JSON.parse(cleaned);
+}
 app.post('/api/analyze', upload.single('audio'), async (req, res) => {
   const file = req.file;
 
@@ -141,7 +211,19 @@ app.post('/api/analyze', upload.single('audio'), async (req, res) => {
       });
     }
 
-    res.json(fallbackAnalysis(transcript));
+   let aiAnalysis;
+
+try {
+  aiAnalysis = await analyzeWithYandexGPT({
+    sourceText: req.body?.sourceText || '',
+    transcript
+  });
+} catch (gptError) {
+  console.error('YandexGPT error:', gptError);
+  aiAnalysis = fallbackAnalysis(transcript);
+}
+
+res.json({ ...fallbackAnalysis(transcript), ...aiAnalysis, transcript });
   } catch (error) {
     console.error(error);
     res.status(500).json({
