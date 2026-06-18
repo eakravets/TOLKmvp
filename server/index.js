@@ -41,8 +41,8 @@ function fallbackAnalysis(transcript = '') {
   const total = Math.max(words.length, 1);
   const unique = new Set(words).size;
 
-  const cleanliness = Math.max(35, Math.min(92, 100 - Math.round((total - unique) / total * 80)));
-  const vocabulary = Math.max(35, Math.min(94, Math.round(unique / total * 120)));
+  const cleanliness = Math.max(35, Math.min(92, 100 - Math.round(((total - unique) / total) * 80)));
+  const vocabulary = Math.max(35, Math.min(94, Math.round((unique / total) * 120)));
   const confidence = Math.max(45, Math.min(90, total > 35 ? 74 : 58));
   const meaning = Math.max(35, Math.min(90, total > 25 ? 70 : 52));
 
@@ -58,64 +58,37 @@ function fallbackAnalysis(transcript = '') {
   };
 }
 
-async function convertToMp3(inputPath) {
-  const outputPath = `${inputPath}.mp3`;
+async function convertToOggOpus(inputPath) {
+  const outputPath = `${inputPath}.ogg`;
 
   await execFileAsync('ffmpeg', [
     '-y',
     '-i', inputPath,
     '-vn',
-    '-acodec', 'libmp3lame',
+    '-acodec', 'libopus',
     '-ar', '48000',
     '-ac', '1',
-    '-b:a', '96k',
+    '-b:a', '48k',
     outputPath
   ]);
 
   return outputPath;
 }
 
-function extractTextDeep(obj) {
-  const found = [];
-
-  function walk(value) {
-    if (!value) return;
-
-    if (typeof value === 'string') return;
-
-    if (Array.isArray(value)) {
-      value.forEach(walk);
-      return;
-    }
-
-    if (typeof value === 'object') {
-      if (typeof value.text === 'string') {
-        found.push(value.text);
-      }
-
-      Object.values(value).forEach(walk);
-    }
-  }
-
-  walk(obj);
-
-  return [...new Set(found)].join(' ').replace(/\s+/g, ' ').trim();
-}
-
-async function transcribeWithYandex(mp3Path) {
+async function transcribeWithYandex(audioPath) {
   if (!YANDEX_API_KEY || !YANDEX_FOLDER_ID) {
     throw new Error('YANDEX_API_KEY or YANDEX_FOLDER_ID is missing');
   }
 
-  const audioBuffer = fs.readFileSync(mp3Path);
+  const audioBuffer = fs.readFileSync(audioPath);
 
   const response = await fetch(
-    `https://stt.api.cloud.yandex.net/speech/v1/stt:recognize?folderId=${YANDEX_FOLDER_ID}&lang=ru-RU&format=mp3`,
+    `https://stt.api.cloud.yandex.net/speech/v1/stt:recognize?folderId=${YANDEX_FOLDER_ID}&lang=ru-RU&format=oggopus`,
     {
       method: 'POST',
       headers: {
         Authorization: `Api-Key ${YANDEX_API_KEY}`,
-        'Content-Type': 'audio/mpeg'
+        'Content-Type': 'audio/ogg'
       },
       body: audioBuffer
     }
@@ -145,15 +118,14 @@ app.post('/api/analyze', upload.single('audio'), async (req, res) => {
 
   const uploadedPath = file.path;
   const webmPath = `${uploadedPath}.webm`;
-  let mp3Path = null;
+  let oggPath = null;
 
   try {
     fs.renameSync(uploadedPath, webmPath);
 
-    mp3Path = await convertToMp3(webmPath);
+    oggPath = await convertToOggOpus(webmPath);
 
-    const transcript = await transcribeWithYandex(mp3Path);
-
+    const transcript = await transcribeWithYandex(oggPath);
     const words = transcript.trim().toLowerCase().match(/[а-яёa-z0-9]+/gi) || [];
 
     if (words.length < 5) {
@@ -179,7 +151,7 @@ app.post('/api/analyze', upload.single('audio'), async (req, res) => {
   } finally {
     fs.rm(uploadedPath, { force: true }, () => {});
     fs.rm(webmPath, { force: true }, () => {});
-    if (mp3Path) fs.rm(mp3Path, { force: true }, () => {});
+    if (oggPath) fs.rm(oggPath, { force: true }, () => {});
   }
 });
 
