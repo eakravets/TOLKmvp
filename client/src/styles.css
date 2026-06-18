@@ -917,3 +917,132 @@ transform-origin: left bottom;
 .pill {
     height: 44px !important;
 }
+
+.resultNew {
+  text-align: center;
+  padding: 32px 28px 0;
+  overflow: hidden;
+}
+
+.resultHero {
+  position: relative;
+  z-index: 2;
+  margin-top: 8px;
+  margin-bottom: 28px;
+}
+
+.resultHeroLabel {
+  margin: 0 0 8px;
+  font-size: 24px;
+  line-height: 1.1;
+  font-weight: 600;
+  color: var(--white);
+}
+
+.resultHeroScore {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  color: var(--white);
+}
+
+.resultHeroScore span {
+  font-size: 118px;
+  line-height: .86;
+  font-weight: 800;
+  letter-spacing: -6px;
+}
+
+.resultHeroScore b {
+  margin-bottom: 10px;
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 700;
+  color: rgba(255,255,255,.42);
+}
+
+.resultProfileCard {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 390px;
+  margin: 0 auto;
+  padding: 34px 28px 32px;
+  border-radius: 24px;
+  background: rgba(255,255,255,.018);
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+}
+
+.resultProfileCard h2 {
+  margin: 0 0 26px;
+  font-size: 24px;
+  line-height: 1.05;
+  font-weight: 600;
+  color: var(--white);
+  text-align: center;
+}
+
+.resultMetrics {
+  display: grid;
+  gap: 20px;
+}
+
+.resultMetric {
+  text-align: left;
+}
+
+
+
+.resultMetricBar {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.13);
+  overflow: hidden;
+}
+
+.resultMetricBar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--white);
+}
+
+.resultComment {
+  position: relative;
+  z-index: 2;
+  max-width: 390px;
+  margin: 28px auto 0;
+  font-size: 18px;
+  line-height: 1.18;
+  font-weight: 500;
+  color: rgba(255,255,255,.42);
+  text-align: center;
+}
+
+.resultNew .sheet {
+  z-index: 3;
+}
+
+.resultNew .bottom {
+  z-index: 4;
+}
+.resultMetric {
+  text-align: center;
+}
+
+.resultMetricLabel {
+  margin-bottom: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--white);
+}
+
+.resultMetricValue {
+  margin-top: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--white);
+}

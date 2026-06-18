@@ -272,100 +272,147 @@ function Analysis() {
   return <main className="screen dark analysis"><div><p>{phrases[i]}</p><div className="loader"><span/><span/><span/></div></div></main>;
 }
 function Result({ result }) {
-  const [open,setOpen]=useState(false); 
-  const sheetRef=useRef(null);
-  const touchStart=useRef(0);
- const s = result?.scores || {
-  cleanliness: 0,
-  vocabulary: 0,
-  confidence: 0,
-  meaning: 0
-};
-const [animatedScores, setAnimatedScores] = useState({
-  cleanliness: 0,
-  vocabulary: 0,
-  confidence: 0,
-  meaning: 0
-});
+  const [open, setOpen] = useState(false);
+  const sheetRef = useRef(null);
+  const touchStart = useRef(0);
 
-useEffect(() => {
-  const keys = ['cleanliness', 'vocabulary', 'confidence', 'meaning'];
+  const baseScores = result?.scores || {
+    cleanliness: 0,
+    vocabulary: 0,
+    confidence: 0,
+    meaning: 0
+  };
 
-  keys.forEach((key, index) => {
-    setTimeout(() => {
-      let current = 0;
-      const target = s[key] || 0;
+  const clamp = (value) => Math.max(0, Math.min(100, Math.round(value || 0)));
 
-      const timer = setInterval(() => {
-        current += 2;
+  const scores = {
+    persuasion: clamp((baseScores.meaning + baseScores.confidence) / 2),
+    clarity: clamp(baseScores.cleanliness),
+    structure: clamp((baseScores.meaning + baseScores.cleanliness) / 2),
+    confidence: clamp(baseScores.confidence),
+    vocabulary: clamp(baseScores.vocabulary)
+  };
 
-        if (current >= target) {
-          current = target;
-          clearInterval(timer);
-        }
+  const overallScore = clamp(
+    (
+      scores.persuasion +
+      scores.clarity +
+      scores.structure +
+      scores.confidence +
+      scores.vocabulary
+    ) / 5
+  );
 
-        setAnimatedScores(prev => ({
-          ...prev,
-          [key]: current
-        }));
-      }, 16);
-    }, index * 450);
-  });
-}, [result]);
-  
-  useEffect(()=>{
-    const sheet=sheetRef.current;
-    const handle=sheet?.querySelector('.sheetHandle');
-    if(!handle) return;
-    
-    const handleTouchStart=(e)=>{ touchStart.current=e.touches[0].clientY };
-    const handleTouchEnd=(e)=>{
-      const diff=touchStart.current-e.changedTouches[0].clientY;
-      if(diff>50 && !open) setOpen(true);
-      if(diff<-50 && open) setOpen(false);
+  const metrics = [
+    { key: 'persuasion', label: 'Убедительность', value: scores.persuasion },
+    { key: 'clarity', label: 'Ясность', value: scores.clarity },
+    { key: 'structure', label: 'Структура', value: scores.structure },
+    { key: 'confidence', label: 'Уверенность', value: scores.confidence },
+    { key: 'vocabulary', label: 'Словарь', value: scores.vocabulary }
+  ];
+
+  useEffect(() => {
+    const sheet = sheetRef.current;
+    const handle = sheet?.querySelector('.sheetHandle');
+    if (!handle) return;
+
+    const handleTouchStart = (e) => {
+      touchStart.current = e.touches[0].clientY;
     };
-    
-    handle.addEventListener('touchstart',handleTouchStart);
-    handle.addEventListener('touchend',handleTouchEnd);
-    return()=>{handle.removeEventListener('touchstart',handleTouchStart);handle.removeEventListener('touchend',handleTouchEnd)};
-  },[open]);
-  
-  return <main className="screen light result"><h2>Ваш речевой профиль</h2>
-    <section className="scoreCard">{Object.entries(labels).map(([k,v])=><div className="score" key={k}><span>{v}</span><div><b style={{width:`${animatedScores[k] || 0}%`}}/></div></div>)}</section>
-    <p className="comment">
-  {noWidow(result?.comment || 'Не удалось получить анализ. Попробуйте записать речь ещё раз.')}
-</p>
-    <section ref={sheetRef} className={`sheet ${open?'open':''}`}>
-      <div className="sheetHandle"/>
-      <p className="sheetTitle">{noWidow('Мы создаём ТОЛК — тренажер для развития уверенной устной речи, словарного запаса через короткие тренировки.')}</p>
-      {open && <img src="/logolight.svg" className="sheetLogo" alt="ТОЛК"/>}
-    </section>
-{open && (
-  <p className="sheetSub">
-    {noWidow('Подпишитесь, чтобы получить приглашение в числе первых пользователей.')}
-  </p>
-)}
 
-<div className="bottom">
-  {!open && (
-    <Button onClick={() => setOpen(true)}>
-      Получить приглашение
-    </Button>
-  )}
+    const handleTouchEnd = (e) => {
+      const diff = touchStart.current - e.changedTouches[0].clientY;
+      if (diff > 50 && !open) setOpen(true);
+      if (diff < -50 && open) setOpen(false);
+    };
 
-  {open && (
-    <div className="socials">
-      <a className="pill outline" href="https://vk.com/tolk_app" target="_blank" rel="noopener noreferrer">
-        <img src="/logovk.svg" alt="VK" />
-      </a>
+    handle.addEventListener('touchstart', handleTouchStart);
+    handle.addEventListener('touchend', handleTouchEnd);
 
-      <a className="pill outline" href="https://t.me/tolk_app" target="_blank" rel="noopener noreferrer">
-        <img src="/logotelegram.svg" alt="Telegram" />
-      </a>
-    </div>
-  )}
+    return () => {
+      handle.removeEventListener('touchstart', handleTouchStart);
+      handle.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [open]);
+
+  return (
+    <main className="screen light result resultNew">
+      <section className="resultHero">
+        <p className="resultHeroLabel">Ваш результат</p>
+
+        <div className="resultHeroScore">
+          <span>{overallScore}</span>
+          <b>/100</b>
+        </div>
+      </section>
+
+      <section className="resultProfileCard">
+        <h2>Ваш речевой профиль</h2>
+
+        <div className="resultMetrics">
+          {metrics.map((metric) => (
+            <div className="resultMetric" key={metric.key}>
+              <div className="resultMetric">
+
+  <div className="resultMetricLabel">
+    {metric.label}
+  </div>
+
+  <div className="resultMetricBar">
+    <i style={{ width: `${metric.value}%` }} />
+  </div>
+
+  <div className="resultMetricValue">
+    {metric.value}%
+  </div>
+
 </div>
-  </main>;
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <p className="resultComment">
+        {noWidow(result?.comment || 'Речь проанализирована. Попробуйте ещё раз, чтобы получить более точный результат.')}
+      </p>
+
+      <section ref={sheetRef} className={`sheet ${open ? 'open' : ''}`}>
+        <div className="sheetHandle" />
+
+        <p className="sheetTitle">
+          {noWidow('Мы создаём ТОЛК — тренажер для развития уверенной устной речи, словарного запаса через короткие тренировки.')}
+        </p>
+
+        {open && <img src="/logolight.svg" className="sheetLogo" alt="ТОЛК" />}
+      </section>
+
+      {open && (
+        <p className="sheetSub">
+          {noWidow('Подпишитесь, чтобы получить приглашение в числе первых пользователей.')}
+        </p>
+      )}
+
+      <div className="bottom">
+        {!open && (
+          <Button onClick={() => setOpen(true)}>
+            Получить приглашение
+          </Button>
+        )}
+
+        {open && (
+          <div className="socials">
+            <a className="pill outline" href="https://vk.com/tolk_app" target="_blank" rel="noopener noreferrer">
+              <img src="/logovk.svg" alt="VK" />
+            </a>
+
+            <a className="pill outline" href="https://t.me/tolk_app" target="_blank" rel="noopener noreferrer">
+              <img src="/logotelegram.svg" alt="Telegram" />
+            </a>
+          </div>
+        )}
+      </div>
+    </main>
+  );
 }
 function App(){
   const [step,setStep]=useState(0), [text,setText]=useState(''), [result,setResult]=useState(null);
