@@ -107,77 +107,33 @@ async function transcribeWithYandex(mp3Path) {
     throw new Error('YANDEX_API_KEY or YANDEX_FOLDER_ID is missing');
   }
 
-  const audioBase64 = fs.readFileSync(mp3Path).toString('base64');
+  const audioBuffer = fs.readFileSync(mp3Path);
 
-  const startResponse = await fetch('https://stt.api.cloud.yandex.net/stt/v3/recognizeFileAsync', {
-    method: 'POST',
-    headers: {
-      Authorization: `Api-Key ${YANDEX_API_KEY}`,
-      'x-folder-id': YANDEX_FOLDER_ID,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      content: audioBase64,
-      recognitionModel: {
-        model: 'general',
-        audioFormat: {
-          containerAudio: {
-            containerAudioType: 'MP3'
-          }
-        },
-        textNormalization: {
-          textNormalization: 'TEXT_NORMALIZATION_ENABLED',
-          profanityFilter: false,
-          literatureText: true
-        },
-        languageRestriction: {
-          restrictionType: 'WHITELIST',
-          languageCode: ['ru-RU']
-        }
-      }
-    })
-  });
-
-  const startData = await startResponse.json();
-
-  if (!startResponse.ok) {
-    throw new Error(`Yandex STT start failed: ${JSON.stringify(startData)}`);
-  }
-
-  const operationId = startData.id;
-
-  if (!operationId) {
-    throw new Error(`Yandex STT operation id missing: ${JSON.stringify(startData)}`);
-  }
-
-  for (let i = 0; i < 30; i++) {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const opResponse = await fetch(`https://operation.api.cloud.yandex.net/operations/${operationId}`, {
+  const response = await fetch(
+    `https://stt.api.cloud.yandex.net/speech/v1/stt:recognize?folderId=${YANDEX_FOLDER_ID}&lang=ru-RU&format=mp3`,
+    {
+      method: 'POST',
       headers: {
-        Authorization: `Api-Key ${YANDEX_API_KEY}`
-      }
-    });
-
-    const opData = await opResponse.json();
-
-    if (!opResponse.ok) {
-      throw new Error(`Yandex operation failed: ${JSON.stringify(opData)}`);
+        Authorization: `Api-Key ${YANDEX_API_KEY}`,
+        'Content-Type': 'audio/mpeg'
+      },
+      body: audioBuffer
     }
-console.log('YANDEX OP DATA:', JSON.stringify(opData).slice(0, 2000));
+  );
 
-    if (opData.done) {
-      const transcript = extractTextDeep(opData.response || opData);
+  const data = await response.json();
 
-      if (!transcript) {
-        throw new Error(`Yandex STT returned empty transcript: ${JSON.stringify(opData)}`);
-      }
-
-      return transcript;
-    }
+  if (!response.ok) {
+    throw new Error(`Yandex STT failed: ${JSON.stringify(data)}`);
   }
 
-  throw new Error('Yandex STT timeout');
+  const transcript = data.result?.trim();
+
+  if (!transcript) {
+    throw new Error(`Yandex STT returned empty transcript: ${JSON.stringify(data)}`);
+  }
+
+  return transcript;
 }
 
 app.post('/api/analyze', upload.single('audio'), async (req, res) => {
