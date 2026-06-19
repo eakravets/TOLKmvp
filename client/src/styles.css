@@ -398,8 +398,8 @@ transform-origin: left bottom;
     border: 1px solid rgba(255, 255, 255, 0.068);
     color: white;
     border-radius: 46px 46px 0 0;
-    min-height: 280px;
-    padding: 8px 34px 28px;
+    min-height: 220px;
+    padding: 0px 18px 18px;
     text-align: center;
     transition: .45s cubic-bezier(.2, .8, .2, 1);
     z-index: 2;
@@ -435,7 +435,7 @@ transform-origin: left bottom;
 
 .sheetLogo {
     position: absolute;
-    top: -45px;
+    top: 345px;
     left: 50%;
     transform: translateX(-50%);
     width: 86%;
@@ -445,7 +445,7 @@ transform-origin: left bottom;
 .sheetTitle {
     font-size: 18px;
     color: #E8E8E8;
-    margin: 70px 0 0 0
+    margin: 40px 0 0 0
 }
 
 .sheetTitle::first-letter {
@@ -453,7 +453,7 @@ transform-origin: left bottom;
 }
 
 .sheetSub {
-    font-size: 18px;
+    font-size: 14px;
     color: #E8E8E8;
     margin: 18px 0 18px
 }
@@ -846,7 +846,7 @@ transform-origin: left bottom;
 }
 .result .bottom {
     position: fixed;
-    left: 48%;
+    left: 50%;
     right: auto;
     bottom: 24px;
     transform: translateX(-50%);
@@ -920,22 +920,22 @@ transform-origin: left bottom;
 
 .resultNew {
   text-align: center;
-  padding: 32px 28px 0;
+  padding: 24px 28px 0;
   overflow: hidden;
 }
 
 .resultHero {
   position: relative;
   z-index: 2;
-  margin-top: 8px;
-  margin-bottom: 28px;
+  margin-top: 10px;
+  margin-bottom: 16px;
 }
 
 .resultHeroLabel {
-  margin: 0 0 8px;
-  font-size: 24px;
+  margin: 0 0 10px;
+  font-size: 18px;
   line-height: 1.1;
-  font-weight: 600;
+  font-weight: 300;
   color: var(--white);
 }
 
@@ -951,12 +951,12 @@ transform-origin: left bottom;
   font-size: 118px;
   line-height: .86;
   font-weight: 800;
-  letter-spacing: -6px;
+  letter-spacing: -4px;
 }
 
 .resultHeroScore b {
-  margin-bottom: 10px;
-  font-size: 42px;
+  margin-bottom: 8px;
+  font-size: 34px;
   line-height: 1;
   font-weight: 700;
   color: rgba(255,255,255,.42);
@@ -968,32 +968,52 @@ transform-origin: left bottom;
   width: 100%;
   max-width: 390px;
   margin: 0 auto;
-  padding: 34px 28px 32px;
-  border-radius: 24px;
+  padding: 16px 26px 24px;
+  border-radius: 20px;
   background: rgba(255,255,255,.018);
   border: 1px solid rgba(255,255,255,.14);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
 }
 
 .resultProfileCard h2 {
-  margin: 0 0 26px;
-  font-size: 24px;
+  margin: 0 0 12px;
+  font-size: 14px;
   line-height: 1.05;
-  font-weight: 600;
+  font-weight: 300;
   color: var(--white);
   text-align: center;
 }
 
 .resultMetrics {
   display: grid;
-  gap: 20px;
+  gap: 8px;
 }
 
 .resultMetric {
   text-align: left;
 }
 
+.resultMetricTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 3px;
+}
 
+.resultMetricTop span {
+  font-size: 14px;
+  line-height: 1.05;
+  font-weight: 200;
+  color: var(--white);
+}
+
+.resultMetricTop b {
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 200;
+  color: var(--white);
+}
 
 .resultMetricBar {
   width: 100%;
@@ -1014,10 +1034,10 @@ transform-origin: left bottom;
   position: relative;
   z-index: 2;
   max-width: 390px;
-  margin: 28px auto 0;
+  margin: 12px auto 0;
   font-size: 18px;
   line-height: 1.18;
-  font-weight: 500;
+  font-weight: 200;
   color: rgba(255,255,255,.42);
   text-align: center;
 }
@@ -1029,20 +1049,10 @@ transform-origin: left bottom;
 .resultNew .bottom {
   z-index: 4;
 }
-.resultMetric {
-  text-align: center;
-}
 
-.resultMetricLabel {
-  margin-bottom: 10px;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--white);
-}
-
-.resultMetricValue {
-  margin-top: 10px;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--white);
+.sheetLead {
+    font-size: 14px;
+    color: rgba(232,232,232,.7);
+    margin: 10px 0 0;
+    text-align: center;
 }
