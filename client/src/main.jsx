@@ -3,6 +3,14 @@ import { createRoot } from 'react-dom/client';
 import './styles.css';
 import './styles.bottom.css';
 
+const YM_ID = 109991757;
+
+function trackGoal(goal) {
+  if (window.ym) {
+    window.ym(YM_ID, 'reachGoal', goal);
+  }
+}
+
 const API = import.meta.env.VITE_API_URL || '';
 const labels = {
   cleanliness: 'Чистота речи',
@@ -71,7 +79,12 @@ function Welcome({ next }) {
       </div>
 
       <div className="bottom">
-        <Button onClick={next}>Начать</Button>
+        <Button onClick={() => {
+  trackGoal('start_test');
+  next();
+}}>
+  Начать
+</Button>
       </div>
     </main>
   );
@@ -389,9 +402,14 @@ function Result({ result }) {
 
       <div className="bottom">
         {!open && (
-          <Button onClick={() => setOpen(true)}>
-            Получить приглашение
-          </Button>
+         <Button
+  onClick={() => {
+    trackGoal('invite_click');
+    setOpen(true);
+  }}
+>
+  Получить приглашение
+</Button>
         )}
 
         {open && (
@@ -435,9 +453,14 @@ function App(){
   }
 
   const data = await r.json();
-  await new Promise(res => setTimeout(res, 2300));
-  setResult(data);
-} catch (err) {
+
+await new Promise(res => setTimeout(res, 2300));
+
+setResult(data);
+trackGoal('analysis_success');
+} 
+catch (err) {
+  trackGoal('analysis_error');
   console.error('ANALYZE ERROR:', err);
 
   await new Promise(res => setTimeout(res, 2300));
