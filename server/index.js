@@ -108,63 +108,132 @@ async function transcribeWithYandex(audioPath) {
 
   return transcript;
 }
+
+const STOP_WORDS = new Set([
+  'и','в','во','не','что','он','на','я','с','со','как','а','то','все','она',
+  'так','его','но','да','ты','к','у','же','вы','за','бы','по','только','ее',
+  'мне','было','вот','от','меня','еще','нет','о','из','ему','для','это',
+  'или','если','при','там','уже','они','мы','их','чем','тем','без','под'
+]);
+
+function tokenize(text = '') {
+  return (text.toLowerCase().match(/[а-яёa-z0-9]+/gi) || [])
+    .filter(word => word.length > 3 && !STOP_WORDS.has(word));
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, Number(value) || min));
+}
+
+function getTextSimilarityScore(sourceText, transcript) {
+  const sourceWords = new Set(tokenize(sourceText));
+  const transcriptWords = new Set(tokenize(transcript));
+
+  if (transcriptWords.size < 5) return 15;
+
+  const matches = [...sourceWords].filter(word => transcriptWords.has(word)).length;
+  const ratio = matches / Math.max(sourceWords.size, 1);
+
+  if (ratio < 0.08) return 20;
+  if (ratio < 0.18) return 35;
+  if (ratio < 0.30) return 50;
+  if (ratio < 0.45) return 65;
+  if (ratio < 0.60) return 75;
+  return 82;
+}
+
+function normalizeAnalysis({ aiAnalysis, sourceText, transcript }) {
+  const similarityScore = getTextSimilarityScore(sourceText, transcript);
+  const words = tokenize(transcript);
+  const uniqueWords = new Set(words);
+
+  const aiScores = aiAnalysis?.scores || {};
+
+  const cleanliness = Math.min(
+    clamp(aiScores.cleanliness, 25, 85),
+    similarityScore + 10
+  );
+
+  const meaning = Math.min(
+    clamp(aiScores.meaning, 25, 85),
+    similarityScore + 8
+  );
+
+  const vocabularyByCode = words.length
+    ? Math.round((uniqueWords.size / words.length) * 100)
+    : 25;
+
+  const vocabulary = Math.min(
+    clamp(aiScores.vocabulary, 30, 82),
+    clamp(vocabularyByCode + 20, 35, 82)
+  );
+
+  const confidence = clamp(aiScores.confidence, 30, 82);
+
+  const total = Math.round(
+    cleanliness * 0.35 +
+    meaning * 0.30 +
+    confidence * 0.20 +
+    vocabulary * 0.15
+  );
+
+  return {
+    scores: {
+      cleanliness,
+      vocabulary,
+      confidence,
+      meaning
+    },
+    total,
+    comment: aiAnalysis?.comment || 'Хорошее начало. Попробуйте подробнее передать главную мысль текста своими словами.'
+  };
+}
+
 async function analyzeWithYandexGPT({ sourceText, transcript }) {
   const prompt = `Исходный текст:
-${sourceText || 'Исходный текст не передан'}
+${sourceText}
 
 Пересказ пользователя:
 ${transcript}
 
-Оцени от 0 до 100:
+Оцени пересказ по 4 метрикам от 0 до 100.
 
-cleanliness — чистота речи: меньше  повторов, сбивок и речевого мусора.
-vocabulary — разнообразие, точность и естественность формулировок.
-confidence — уверенность, плавность и связность речи.
-meaning — насколько смысл пересказа соответствует исходному тексту, смысл пользователь может передавать своими словами.
+ВАЖНО:
+Это не оценка дикции, голоса или интонации.
+Это оценка понимания текста, качества пересказа и словарного запаса.
 
-Правила оценивания:
-- Не ставь оценки выше 85, если нет явного сильного результата.
-- Средний пользователь обычно получает 45–70.
-- 70–80 — хороший, но не идеальный результат.
-- 80–90 — очень сильный результат.
-- 90–100 — почти профессиональная речь, ставь крайне редко.
+Метрики:
 
-meaning:
-- не связан с текстом: 0–20
-- сказал слишком мало: 20–35
-- частично понял смысл: 40–60
-- основная мысль передана: 61–75
-- смысл передан хорошо своими словами: 76–85
-- точно, ясно, своими словами, без потерь: 86–95
+cleanliness — точность смысла.
+Оцени, насколько пересказ не искажает исходный текст.
 
-vocabulary:
-- простые повторяющиеся слова: 35–55
-- нормальная бытовая речь: 56–70
-- точные и разнообразные формулировки: 71–85
-- очень выразительная речь: 86–95
+vocabulary — словарный запас.
+Оцени разнообразие и точность слов, отсутствие однообразных повторов.
 
-confidence:
-Оцени только по связности текста. Не делай выводов о голосе, темпе и интонации.
-- сбивчиво: 35–55
-- понятно, но неровно: 56–70
-- связно и уверенно: 71–85
-- очень плавно и структурно: 86–95
+confidence — связность пересказа.
+Оцени, насколько пересказ звучит логично, последовательно и понятно по тексту расшифровки.
 
-cleanliness:
-Оцени только видимые повторы, обрывы, слова-паразиты в расшифровке.
-Не придумывай их.
+meaning — полнота пересказа.
+Оцени, сколько важных идей из исходного текста пользователь передал.
 
-Запрещено утверждать:
-- что были слова-паразиты;
-- что были повторы;
-- что была неуверенная подача;
-- что был плохой темп;
-- что была плохая дикция;
+Строгие правила:
+- Если пересказ почти не связан с исходным текстом, cleanliness и meaning должны быть ниже 35.
+- Если пользователь сказал очень мало, meaning должен быть ниже 40.
+- Если передана только общая тема, но мало деталей, meaning 40–60.
+- Если главная мысль передана, но неполно, meaning 61–72.
+- Если пересказ хороший и своими словами, meaning 73–82.
+- Оценки выше 85 ставь только за очень сильный пересказ.
+- Не ставь 90–100 обычному пользователю.
+- Не завышай оценку ради мотивации.
+- Формулируй комментарий мягко и поддерживающе.
 
-если это невозможно определить по тексту.
-
-Не придумывай недостатки ради баланса оценки.
-Если существенных недостатков не видно, так и напиши. Подбирай мягкие формулировки, чтобы не растроить пользователя и не огорчить, а мотивировать к улучшению результатов.
+Запрещено оценивать:
+- дикцию;
+- темп;
+- голос;
+- интонацию;
+- волнение;
+- качество записи.
 
 Верни JSON строго такого вида:
 {
@@ -174,10 +243,8 @@ cleanliness:
     "confidence": 0,
     "meaning": 0
   },
-  "comment": "короткий вывод до 35 слов"
-}
-  `;
-
+  "comment": "короткий мягкий вывод до 35 слов"
+}`;
   const response = await fetch('https://llm.api.cloud.yandex.net/foundationModels/v1/completion', {
     method: 'POST',
     headers: {
@@ -249,11 +316,19 @@ app.post('/api/analyze', upload.single('audio'), async (req, res) => {
       });
     }
 
-   let aiAnalysis;
+   const sourceText = req.body?.sourceText;
+
+if (!sourceText) {
+  return res.status(400).json({
+    error: 'sourceText is required'
+  });
+}
+
+let aiAnalysis;
 
 try {
   aiAnalysis = await analyzeWithYandexGPT({
-    sourceText: req.body?.sourceText || '',
+    sourceText,
     transcript
   });
 } catch (gptError) {
@@ -261,7 +336,16 @@ try {
   aiAnalysis = fallbackAnalysis(transcript);
 }
 
-res.json({ ...fallbackAnalysis(transcript), ...aiAnalysis, transcript });
+const safeAnalysis = normalizeAnalysis({
+  aiAnalysis,
+  sourceText,
+  transcript
+});
+
+res.json({
+  ...safeAnalysis,
+  transcript
+});
   } catch (error) {
     console.error(error);
     res.status(500).json({
