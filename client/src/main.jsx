@@ -418,7 +418,7 @@ function Result({ result }) {
               <img src="/logovk.svg" alt="VK" />
             </a>
 
-            <a className="pill outline" href="https://t.me/tolk_app" target="_blank" rel="noopener noreferrer">
+            <a className="pill outline" href="https://t.me/tolk_app?utm_source=tolk_app&utm_medium=result" target="_blank" rel="noopener noreferrer">
               <img src="/logotelegram.svg" alt="Telegram" />
             </a>
           </div>
