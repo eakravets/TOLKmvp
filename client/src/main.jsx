@@ -414,7 +414,7 @@ function Result({ result }) {
 
         {open && (
           <div className="socials">
-            <a className="pill outline" href="https://vk.com/tolk_app" target="_blank" rel="noopener noreferrer">
+            <a className="pill outline" href="https://vk.com/tolk_app?utm_source=tolk_app&utm_medium=result" target="_blank" rel="noopener noreferrer">
               <img src="/logovk.svg" alt="VK" />
             </a>
 
